@@ -1,28 +1,33 @@
-# azure-pipelines.yml
-trigger:
-- main
+name: Terraform Deployment
 
-pr:
-- main
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-- job: Terraform
-  displayName: 'Deploy Terraform Configuration'
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - task: UseTerraform@0
-    inputs:
-      terraformVersion: '1.4.x'
+  terraform:
+    runs-on: ubuntu-latest
 
-  - script: |
-      terraform init
-    displayName: 'Terraform Init'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-  - script: |
-      terraform plan
-    displayName: 'Terraform Plan'
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.4.x
 
-  - script: |
-      terraform apply -auto-approve
-    displayName: 'Terraform Apply'
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: terraform plan
+
+    - name: Terraform Apply
+      env:
+        ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      run: terraform apply -auto-approve
